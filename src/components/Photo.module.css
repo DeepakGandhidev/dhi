@@ -1,0 +1,45 @@
+.frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--paper-deep);
+  isolation: isolate;
+  line-height: 0;
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.frame:hover .img { transform: scale(1.03); }
+
+/* The wash is what makes borrowed photography look like one set. */
+.wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.frame[data-tone="indigo"] .wash {
+  background: linear-gradient(150deg, rgba(23, 26, 58, 0.55), rgba(46, 52, 128, 0.3));
+  opacity: 1;
+}
+.frame[data-tone="warm"] .wash {
+  background: linear-gradient(150deg, rgba(255, 182, 39, 0.28), rgba(224, 140, 0, 0.16));
+  opacity: 1;
+}
+
+.fallback {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  background:
+    radial-gradient(70% 70% at 30% 20%, rgba(46, 52, 128, 0.9), transparent 70%),
+    var(--ink);
+}

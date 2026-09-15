@@ -1,0 +1,184 @@
+/* ---------------------------------------------------------------
+   DHI International
+   Indigo dye + marigold. One hand, five fingers, two legs.
+   --------------------------------------------------------------- */
+
+:root {
+  /* Core palette */
+  --ink: #171a3a;          /* deep indigo, the canvas for dark sections */
+  --ink-soft: #232755;
+  --indigo: #2e3480;       /* mid indigo, structure and rules */
+  --indigo-pale: #8fa3d9;
+  --marigold: #ffb627;     /* the one hot colour: value, money, packages */
+  --marigold-deep: #e08c00;
+  --jade: #12907a;         /* growth: legs, pairs, generations */
+  --jade-pale: #a9ded2;
+  --paper: #f4f5f8;        /* cool paper, not cream */
+  --paper-deep: #e6e9f0;
+  --white: #ffffff;
+
+  --text: var(--ink);
+  --text-muted: #565c86;
+  --rule: rgba(46, 52, 128, 0.16);
+
+  /* Type */
+  --display: var(--font-display, "Bricolage Grotesque"), "Trebuchet MS", sans-serif;
+  --body: var(--font-body, "Instrument Sans"), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Scale: 1.25 minor third, clamped for mobile */
+  --t-xs: 0.78rem;
+  --t-s: 0.9rem;
+  --t-base: 1.0rem;
+  --t-m: clamp(1.1rem, 0.5vw + 1rem, 1.3rem);
+  --t-l: clamp(1.45rem, 1.2vw + 1.1rem, 1.95rem);
+  --t-xl: clamp(2rem, 2.4vw + 1.2rem, 3rem);
+  --t-2xl: clamp(2.2rem, 3.4vw + 0.9rem, 3.9rem);
+  --t-3xl: clamp(2.6rem, 5.2vw + 0.6rem, 5.1rem);
+
+  --gutter: 20px;
+  --measure: 62ch;
+  --radius: 14px;
+  --radius-lg: 26px;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: var(--t-base);
+  line-height: 1.6;
+  font-feature-settings: "tnum" 0;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--display);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+p { margin: 0 0 1em; max-width: var(--measure); }
+a { color: inherit; }
+
+/* Every figure on this site is money or PV: keep the columns aligned. */
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+.shell {
+  width: min(1180px, 100% - calc(var(--gutter) * 2));
+  margin-inline: auto;
+}
+
+.section { padding: clamp(64px, 9vw, 130px) 0; }
+.section--tight { padding: clamp(48px, 6vw, 84px) 0; }
+
+.dark {
+  background: var(--ink);
+  color: var(--paper);
+  --text: var(--paper);
+  --text-muted: #9ba2cc;
+  --rule: rgba(255, 255, 255, 0.16);
+}
+
+/* ---- Section headings ------------------------------------------------ */
+
+.lede {
+  font-size: var(--t-m);
+  color: var(--text-muted);
+  max-width: 54ch;
+}
+
+.rule {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 0;
+}
+
+/* ---- Buttons --------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.85em 1.6em;
+  border-radius: 100px;
+  border: 1px solid transparent;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: var(--t-s);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1), background-color 0.18s, color 0.18s, border-color 0.18s;
+}
+.btn:active { transform: translateY(1px); }
+.btn--primary { background: var(--marigold); color: var(--ink); }
+.btn--primary:hover { background: var(--white); }
+.btn--ghost { border-color: var(--rule); color: var(--text); }
+.btn--ghost:hover { border-color: currentColor; }
+.btn--ink { background: var(--ink); color: var(--paper); }
+.btn--ink:hover { background: var(--indigo); }
+
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid var(--marigold);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ---- Forms ----------------------------------------------------------- */
+
+.field { display: grid; gap: 0.4rem; }
+.field > span { font-size: var(--t-s); font-weight: 600; }
+.field input,
+.field select {
+  font: inherit;
+  padding: 0.8em 0.9em;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--white);
+  color: var(--ink);
+}
+.field input:focus, .field select:focus { border-color: var(--indigo); }
+.field small { color: var(--text-muted); font-size: var(--t-xs); }
+
+/* ---- Motion ---------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* One orchestrated page-load sequence, hero only. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes grow {
+  from { transform: scaleY(0.04); }
+  to { transform: scaleY(1); }
+}
+@keyframes drawIn {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Reveal on scroll, used sparingly: only where a section's meaning is
+   "this multiplies" or "this fills up". */
+.reveal { opacity: 0; transform: translateY(14px); }
+.reveal.is-in {
+  animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes growX {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}

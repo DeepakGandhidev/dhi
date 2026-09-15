@@ -1,0 +1,63 @@
+.rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+  counter-reset: award;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: clamp(16px, 2.5vw, 30px);
+  padding: clamp(20px, 3vw, 30px) 0;
+  border-top: 1px solid var(--rule);
+  position: relative;
+}
+.step:first-child { border-top: 0; }
+
+/* The rail line runs through the markers, connecting the levels. */
+.step::before {
+  content: "";
+  position: absolute;
+  left: 27px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--rule);
+}
+.step:first-child::before { top: 50%; }
+.step:last-child::before { bottom: 50%; }
+
+.marker {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.body { padding-top: 6px; }
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.name {
+  font-size: var(--t-l);
+  font-weight: 700;
+  font-stretch: 90%;
+}
+
+.ordinal { font-size: var(--t-xs); color: var(--text-muted); }
+
+.req { margin: 0 0 4px; font-size: var(--t-m); font-weight: 500; }
+.detail { margin: 0; font-size: var(--t-s); color: var(--text-muted); }

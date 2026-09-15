@@ -1,0 +1,130 @@
+.wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: clamp(28px, 4vw, 56px);
+  align-items: start;
+}
+@media (max-width: 880px) { .wrap { grid-template-columns: 1fr; } }
+
+.controls { display: grid; gap: 22px; }
+
+.pkgRow { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.pkgChip {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: var(--t-s);
+  padding: 0.5em 1em;
+  border-radius: 100px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.pkgChip:hover { border-color: var(--indigo); }
+.pkgChip[data-on="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.legs { display: grid; gap: 18px; }
+
+.leg { display: grid; gap: 8px; }
+
+.legHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.legName { font-family: var(--display); font-weight: 700; font-size: var(--t-m); }
+.legPv { font-family: var(--display); font-weight: 700; font-size: var(--t-m); }
+.legFcfa { font-size: var(--t-xs); color: var(--text-muted); }
+
+/* The PV bar: matched portion in jade, carry-over hatched. */
+.track {
+  position: relative;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--paper-deep);
+  overflow: hidden;
+  border: 1px solid var(--rule);
+}
+.matched {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--jade);
+  transition: width 0.45s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.carry {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(46, 52, 128, 0.22) 0 6px,
+    transparent 6px 12px
+  );
+  transition: width 0.45s cubic-bezier(0.2, 0.8, 0.3, 1), left 0.45s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+/* Pair gridlines every 25 PV, so you can count the pairs on the bar. */
+.ticks { position: absolute; inset: 0; pointer-events: none; }
+.tick { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, 0.55); }
+
+.slider { width: 100%; accent-color: var(--jade); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: var(--t-xs); color: var(--text-muted); }
+.swatch { display: inline-flex; align-items: center; gap: 7px; }
+.swatchBox { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+
+/* ---- Result ---------------------------------------------------------- */
+
+.result {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--radius-lg);
+  padding: clamp(24px, 3vw, 34px);
+  position: sticky;
+  top: 24px;
+}
+@media (max-width: 880px) { .result { position: static; } }
+
+.resultLabel { font-size: var(--t-s); color: #9aa2d0; margin: 0 0 6px; }
+
+.payout {
+  font-family: var(--display);
+  font-weight: 800;
+  font-stretch: 85%;
+  font-size: clamp(2.1rem, 5vw, 3.1rem);
+  line-height: 1;
+  color: var(--marigold);
+  letter-spacing: -0.04em;
+}
+
+.working {
+  margin-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  display: grid;
+}
+.workRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: var(--t-s);
+}
+.workRow:last-child { border-bottom: 0; }
+.workRow span:first-child { color: #9aa2d0; }
+.workRow span:last-child { font-family: var(--display); font-weight: 600; white-space: nowrap; }
+
+.note {
+  margin: 18px 0 0;
+  font-size: var(--t-xs);
+  color: #9aa2d0;
+  line-height: 1.55;
+}
+
+.empty { color: #9aa2d0; font-size: var(--t-s); margin: 10px 0 0; }

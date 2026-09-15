@@ -1,0 +1,109 @@
+.title { font-size: var(--t-2xl); font-stretch: 85%; line-height: 0.95; margin-bottom: 0.35em; }
+.h2 { font-size: var(--t-xl); font-stretch: 90%; margin-bottom: 0.45em; }
+.head { max-width: 62ch; margin-bottom: clamp(26px, 4vw, 44px); }
+
+.toc { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.tocLink {
+  font-size: var(--t-s);
+  text-decoration: none;
+  padding: 0.45em 1em;
+  border-radius: 100px;
+  border: 1px solid var(--rule);
+  color: var(--text-muted);
+  transition: border-color 0.2s, color 0.2s;
+}
+.tocLink:hover { color: var(--ink); border-color: var(--ink); }
+
+/* ---- Direct bonus ladder --------------------------------------------- */
+
+.ladder { display: grid; gap: 10px; }
+.rung {
+  display: grid;
+  grid-template-columns: minmax(74px, auto) minmax(0, 1fr) auto;
+  gap: clamp(12px, 2vw, 24px);
+  align-items: center;
+}
+.rungName { font-family: var(--display); font-weight: 700; font-size: var(--t-m); }
+.rungTrack { height: 34px; background: var(--paper-deep); border-radius: 8px; overflow: hidden; }
+.rungFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--indigo), var(--marigold));
+  border-radius: 8px;
+  transform-origin: left center;
+}
+:global(.is-in) .rungFill { animation: growX 0.9s cubic-bezier(0.22, 1, 0.3, 1) both; }
+.rungPct { font-family: var(--display); font-weight: 700; font-size: var(--t-m); min-width: 4ch; text-align: right; }
+
+/* ---- Binary diagram --------------------------------------------------- */
+
+.tree { display: grid; justify-items: center; gap: 0; padding: 10px 0 0; }
+.node {
+  display: grid;
+  place-items: center;
+  border-radius: 100px;
+  padding: 0.55em 1.2em;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--t-s);
+  background: var(--ink);
+  color: var(--paper);
+  white-space: nowrap;
+}
+.nodeLeg { background: var(--jade); }
+.nodeDown { background: var(--white); color: var(--ink); border: 1px solid var(--rule); font-weight: 600; }
+
+.branch { width: 100%; max-width: 560px; }
+.legRow { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px, 6vw, 70px); justify-items: center; }
+.legCol { display: grid; justify-items: center; gap: 10px; width: 100%; }
+.pairRow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+
+.matchBadge {
+  margin-top: 22px;
+  display: inline-grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 14px 26px;
+  border-radius: var(--radius-lg);
+  background: rgba(18, 144, 122, 0.12);
+  border: 1px dashed var(--jade);
+  text-align: center;
+}
+.matchSum { font-family: var(--display); font-weight: 700; font-size: var(--t-m); }
+.matchNote { font-size: var(--t-xs); color: var(--text-muted); }
+
+/* ---- Fast cumulative -------------------------------------------------- */
+
+.fast {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(22px, 4vw, 50px);
+  align-items: center;
+  padding: clamp(24px, 4vw, 44px);
+  border-radius: var(--radius-lg);
+  background: var(--ink);
+  color: var(--paper);
+}
+@media (max-width: 760px) { .fast { grid-template-columns: 1fr; } }
+.fastNum {
+  font-family: var(--display);
+  font-weight: 800;
+  font-stretch: 85%;
+  font-size: clamp(3.4rem, 11vw, 6.6rem);
+  line-height: 0.82;
+  color: var(--marigold);
+  letter-spacing: -0.05em;
+}
+.fastLabel { font-size: var(--t-m); margin-top: 10px; color: #b9c0e6; }
+
+.discountGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
+.discountCell {
+  padding: 20px;
+  border-radius: var(--radius);
+  background: var(--white);
+  border: 1px solid var(--rule);
+  display: grid;
+  gap: 3px;
+}
+.discountPct { font-family: var(--display); font-weight: 700; font-size: var(--t-l); color: var(--jade); }
+.discountName { font-size: var(--t-s); font-weight: 600; }
+.discountNote { font-size: var(--t-xs); color: var(--text-muted); }

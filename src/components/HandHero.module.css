@@ -1,0 +1,242 @@
+.hero {
+  position: relative;
+  background: var(--ink);
+  color: var(--paper);
+  overflow: hidden;
+  padding-top: clamp(48px, 7vw, 90px);
+  padding-bottom: clamp(48px, 7vw, 90px);
+}
+
+/* Indigo-dye wash: two soft fields, no hard gradient banding. */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: -30% -10% auto -10%;
+  height: 120%;
+  background:
+    radial-gradient(48% 42% at 78% 28%, rgba(46, 52, 128, 0.85), transparent 70%),
+    radial-gradient(40% 38% at 12% 80%, rgba(18, 144, 122, 0.4), transparent 72%);
+  pointer-events: none;
+}
+
+.grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+}
+
+.copy { animation: rise 0.8s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+
+.title {
+  font-size: var(--t-3xl);
+  font-weight: 800;
+  font-stretch: 85%;
+  line-height: 0.92;
+  margin-bottom: 0.4em;
+}
+
+.titleLine2 { display: block; color: var(--marigold); }
+
+.lede {
+  font-size: var(--t-m);
+  color: #b9c0e6;
+  max-width: 44ch;
+  margin-bottom: 1.8em;
+}
+
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 2.4em; }
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, auto));
+  justify-content: start;
+  gap: clamp(16px, 2.6vw, 34px);
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+@media (max-width: 560px) { .facts { grid-template-columns: 1fr 1fr; } }
+.fact { display: grid; gap: 2px; }
+.factNum {
+  font-family: var(--display);
+  font-size: var(--t-m);
+  font-weight: 700;
+  color: var(--white);
+}
+.factLabel { font-size: var(--t-xs); color: #9199c9; }
+
+/* ---- The hand -------------------------------------------------------- */
+
+.hand {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: clamp(330px, 36vw, 430px);
+}
+
+.fingers {
+  display: grid;
+  grid-template-columns: auto repeat(4, 1fr);
+  gap: clamp(8px, 1.4vw, 16px);
+  align-items: end;
+  height: 100%;
+}
+
+.finger {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  height: 100%;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The thumb sits lower and apart, as a thumb does. */
+.thumb { padding-right: clamp(6px, 1.2vw, 16px); }
+.thumb .bar {
+  transform-origin: bottom right;
+  rotate: -14deg;
+  border-radius: 60px 60px 8px 20px;
+}
+.thumb:hover .bar { transform: translateY(-6px); }
+.thumb[data-active="true"] .bar { transform: translateY(-8px); }
+
+.bar {
+  position: relative;
+  width: 100%;
+  border-radius: 60px 60px 8px 8px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  transform-origin: bottom center;
+  animation: grow 0.85s cubic-bezier(0.22, 1, 0.3, 1) both;
+  transition: background-color 0.3s, border-color 0.3s, transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: clamp(8px, 1.2vw, 14px);
+  align-items: center;
+  padding: clamp(12px, 1.6vw, 18px) 6px clamp(10px, 1.3vw, 15px);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.finger:hover .bar { transform: translateY(-8px); background: rgba(255, 255, 255, 0.15); }
+
+.finger[data-active="true"] .bar {
+  background: var(--marigold);
+  border-color: var(--marigold);
+  color: var(--ink);
+  transform: translateY(-10px);
+  box-shadow: 0 22px 50px -20px rgba(255, 182, 39, 0.75);
+}
+
+.knuckle {
+  width: clamp(18px, 2.4vw, 26px);
+  height: clamp(18px, 2.4vw, 26px);
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  opacity: 0.45;
+  flex: none;
+}
+.finger[data-active="true"] .knuckle { opacity: 1; background: var(--ink); border-color: var(--ink); }
+
+.barName {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(0.72rem, 1.4vw, 0.98rem);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.barPv {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(0.66rem, 1.2vw, 0.82rem);
+  color: #9aa2d0;
+  text-align: center;
+  padding-bottom: 8px;
+  flex: none;
+  transition: color 0.3s, transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.finger[data-active="true"] .barPv { color: var(--marigold); transform: translateY(-8px); }
+
+.palm {
+  margin-top: 10px;
+  height: clamp(54px, 7vw, 82px);
+  border-radius: 12px 12px 42px 42px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-size: var(--t-xs);
+  color: #9aa2d0;
+  animation: rise 0.7s 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+/* ---- Selected package readout ---------------------------------------- */
+
+.readout {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+  align-items: end;
+  padding: 20px 22px;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  animation: rise 0.7s 0.62s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.readoutName {
+  font-family: var(--display);
+  font-size: var(--t-l);
+  font-weight: 700;
+  color: var(--marigold);
+  line-height: 1;
+}
+.readoutBlurb { font-size: var(--t-s); color: #b9c0e6; margin: 8px 0 0; max-width: 34ch; }
+
+.readoutPrice { text-align: right; }
+.readoutPriceNum {
+  font-family: var(--display);
+  font-size: var(--t-m);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.readoutRates { font-size: var(--t-xs); color: #9aa2d0; white-space: nowrap; }
+
+@media (max-width: 520px) {
+  .readout { grid-template-columns: 1fr; }
+  .readoutPrice { text-align: left; }
+  .barName { font-size: 0.7rem; }
+}
+
+/* On a narrow screen the splayed thumb would run past the gutter. */
+@media (max-width: 620px) {
+  .thumb .bar { rotate: -6deg; }
+  .fingers { gap: 6px; }
+}
