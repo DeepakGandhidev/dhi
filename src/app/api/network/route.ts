@@ -16,7 +16,9 @@ export async function GET() {
   }
   try {
     await connectToDatabase();
-    const root = await Member.findOne({ placementParent: null }).select("_id").lean();
+    const root = await Member.findOne({ placementParent: { $type: "null" } })
+      .select("_id")
+      .lean();
     return NextResponse.json({ hasRoot: Boolean(root), ready: true });
   } catch {
     // If we cannot tell, assume a sponsor is needed rather than inviting

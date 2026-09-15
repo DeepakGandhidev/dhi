@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase, dbConfigured } from "@/lib/mongodb";
+import { connectToDatabase, dbConfigured, databaseNameFromUri } from "@/lib/mongodb";
 import { Member, generateMemberCode, type Leg } from "@/lib/models";
 import { findOpenSlot } from "@/lib/placement";
 import { hashPassword, startSession, sessionSecretStatus, sessionSecretProblem } from "@/lib/auth";
@@ -67,6 +67,16 @@ export async function POST(request: Request) {
 
   // Checked up front. Signing in needs this, and finding out after the member
   // row exists would leave a half-registered person behind.
+  if (!databaseNameFromUri()) {
+    return NextResponse.json(
+      {
+        error:
+          "Registration is not fully configured yet: MONGODB_URI has no database name, so it would write to the shared 'test' database. Add /dhi before the '?' in the connection string and redeploy. Nobody has been registered.",
+      },
+      { status: 503 }
+    );
+  }
+
   const secretStatus = sessionSecretStatus();
   if (secretStatus !== "ok") {
     return NextResponse.json(
@@ -100,7 +110,9 @@ export async function POST(request: Request) {
       }
     } else {
       // Without a sponsor this member can only be the root, and there is one.
-      const rootExists = await Member.findOne({ placementParent: null }).select("_id").lean();
+      const rootExists = await Member.findOne({ placementParent: { $type: "null" } })
+        .select("_id")
+        .lean();
       if (rootExists) {
         return NextResponse.json(
           {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase, dbConfigured } from "@/lib/mongodb";
+import { connectToDatabase, dbConfigured, databaseNameFromUri } from "@/lib/mongodb";
 import { Member } from "@/lib/models";
 import { sessionSecretStatus, MIN_SECRET_LENGTH } from "@/lib/auth";
 
@@ -19,8 +19,12 @@ export async function GET(request: Request) {
   }
 
   const secret = sessionSecretStatus();
+  const dbName = databaseNameFromUri();
   const report: Record<string, unknown> = {
     MONGODB_URI: dbConfigured ? "set" : "missing",
+    // The commonest misconfiguration: a connection string with no database
+    // name, which silently writes to "test".
+    databaseName: dbName ?? "MISSING - would default to 'test'",
     ADMIN_PASSWORD: "set",
     SESSION_SECRET: secret,
     sessionSecretLength: (process.env.SESSION_SECRET ?? "").trim().length,
@@ -30,7 +34,7 @@ export async function GET(request: Request) {
     canRegister: false,
   };
 
-  if (dbConfigured) {
+  if (dbConfigured && dbName) {
     try {
       await connectToDatabase();
       const count = await Member.countDocuments();
@@ -42,6 +46,12 @@ export async function GET(request: Request) {
       report.databaseError =
         err instanceof Error ? err.message.slice(0, 200) : "unknown error";
     }
+  }
+
+  if (dbConfigured && !dbName) {
+    report.database = "misconfigured";
+    report.databaseError =
+      "MONGODB_URI has no database name. Add /dhi before the '?' in the connection string.";
   }
 
   report.canRegister = secret === "ok" && report.database === "connected";
