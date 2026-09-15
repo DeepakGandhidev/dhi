@@ -8,19 +8,32 @@ const COOKIE = "dhi_session";
 const MAX_AGE = 60 * 60 * 24 * 14; // 14 days
 
 function secret() {
-  const s = process.env.SESSION_SECRET;
-  if (!s || s.length < 16) {
-    throw new Error(
-      "SESSION_SECRET is missing or too short. Set a long random value in .env.local."
-    );
-  }
-  return s;
+  const status = sessionSecretStatus();
+  if (status !== "ok") throw new Error(sessionSecretProblem(status));
+  return (process.env.SESSION_SECRET as string).trim();
 }
 
-/** Whether a usable SESSION_SECRET is present, without throwing. */
-export function sessionSecretConfigured() {
+export const MIN_SECRET_LENGTH = 16;
+
+export type SecretStatus = "ok" | "missing" | "too-short";
+
+/** The state of SESSION_SECRET, without throwing and without revealing it. */
+export function sessionSecretStatus(): SecretStatus {
   const s = process.env.SESSION_SECRET;
-  return Boolean(s && s.length >= 16);
+  if (!s || s.trim() === "") return "missing";
+  if (s.trim().length < MIN_SECRET_LENGTH) return "too-short";
+  return "ok";
+}
+
+export const sessionSecretConfigured = () => sessionSecretStatus() === "ok";
+
+/** A message that says which of the two problems it actually is. */
+export function sessionSecretProblem(status: SecretStatus) {
+  if (status === "too-short") {
+    const length = (process.env.SESSION_SECRET ?? "").trim().length;
+    return `SESSION_SECRET is set but too short (${length} characters; at least ${MIN_SECRET_LENGTH} are needed). Generate a long random value and redeploy.`;
+  }
+  return "SESSION_SECRET is not set on this deployment. Add it in your hosting environment variables, then redeploy — on Vercel, adding a variable does not update a deployment that is already running.";
 }
 
 export const hashPassword = (plain: string) => bcrypt.hash(plain, 12);

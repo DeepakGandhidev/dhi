@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectToDatabase, dbConfigured } from "@/lib/mongodb";
 import { Member, generateMemberCode, type Leg } from "@/lib/models";
 import { findOpenSlot } from "@/lib/placement";
-import { hashPassword, startSession, sessionSecretConfigured } from "@/lib/auth";
+import { hashPassword, startSession, sessionSecretStatus, sessionSecretProblem } from "@/lib/auth";
 import { PACKAGE_BY_ID, type PackageId } from "@/lib/plan";
 
 export const runtime = "nodejs";
@@ -67,12 +67,10 @@ export async function POST(request: Request) {
 
   // Checked up front. Signing in needs this, and finding out after the member
   // row exists would leave a half-registered person behind.
-  if (!sessionSecretConfigured()) {
+  const secretStatus = sessionSecretStatus();
+  if (secretStatus !== "ok") {
     return NextResponse.json(
-      {
-        error:
-          "Registration is not fully configured yet: SESSION_SECRET is missing. Nobody has been registered. Add it to the environment and try again.",
-      },
+      { error: `Registration is not fully configured yet. ${sessionSecretProblem(secretStatus)} Nobody has been registered.` },
       { status: 503 }
     );
   }
