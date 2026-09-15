@@ -17,7 +17,9 @@ type Success = {
   memberCode: string;
   fullName: string;
   packageName: string;
-  leg: "left" | "right";
+  placementParent: string | null;
+  position: "left" | "right" | null;
+  spilled: boolean;
 };
 
 export function JoinForm() {
@@ -48,6 +50,7 @@ export function JoinForm() {
       email: String(data.get("email") ?? ""),
       city: String(data.get("city") ?? ""),
       sponsorCode: String(data.get("sponsorCode") ?? ""),
+      password: String(data.get("password") ?? ""),
       packageId,
       leg,
     };
@@ -82,8 +85,14 @@ export function JoinForm() {
         <p className="lede">Your member code — give this to everyone you sponsor.</p>
         <div className={`${styles.doneCode} num`}>{done.memberCode}</div>
         <p style={{ color: "var(--text-muted)", fontSize: "var(--t-s)" }}>
-          {done.packageName} package, placed on the {done.leg} leg. Your registration is
-          pending until payment is confirmed at the DHI office.
+          {done.packageName} package.{" "}
+          {done.placementParent
+            ? `You were placed on the ${done.position} side of ${done.placementParent}.`
+            : "You are the first member, at the top of the tree."}{" "}
+          {done.spilled
+            ? "Your sponsor's chosen leg was full, so you spilled down to the next open position."
+            : ""}{" "}
+          Your registration is pending until payment is confirmed at the DHI office.
         </p>
 
         <ol className={styles.doneNext}>
@@ -101,8 +110,8 @@ export function JoinForm() {
         </ol>
 
         <div style={{ marginTop: 30, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <Link href="/calculator" className="btn btn--ink">
-            Work out your first bonus
+          <Link href="/dashboard" className="btn btn--ink">
+            Go to your dashboard
           </Link>
           <Link href="/plan" className="btn btn--ghost">
             Read the plan
@@ -170,6 +179,19 @@ export function JoinForm() {
             {errors.email ? <p className={styles.error}>{errors.email}</p> : null}
           </label>
 
+          <label className="field">
+            <span>Choose a password</span>
+            <input
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              aria-invalid={Boolean(errors.password)}
+            />
+            <small>At least 8 characters. You will use this and your member code to sign in.</small>
+            {errors.password ? <p className={styles.error}>{errors.password}</p> : null}
+          </label>
+
           <fieldset className={styles.fieldset}>
             <legend className={styles.legendText}>Your package</legend>
             <div className={styles.pkgOptions}>
@@ -197,7 +219,7 @@ export function JoinForm() {
           </fieldset>
 
           <fieldset className={styles.fieldset}>
-            <legend className={styles.legendText}>Which leg do you want to be placed on?</legend>
+            <legend className={styles.legendText}>Which leg did your sponsor choose for you?</legend>
             <div className={styles.legOptions}>
               {(["left", "right"] as const).map((side) => (
                 <label className={styles.legOption} key={side}>
@@ -213,8 +235,8 @@ export function JoinForm() {
                   </span>
                   <span className={styles.legNote}>
                     {side === "left"
-                      ? "Your volume builds the left side"
-                      : "Your volume builds the right side"}
+                      ? "Start the search on their left"
+                      : "Start the search on their right"}
                   </span>
                 </label>
               ))}
@@ -280,12 +302,14 @@ export function JoinForm() {
         </div>
         <div className={styles.asideRow}>
           <span>Placement</span>
-          <span>{leg === "left" ? "Left leg" : "Right leg"}</span>
+          <span>{leg === "left" ? "Left leg" : "Right leg"}, first open slot</span>
         </div>
 
         <p className={styles.asideNote}>
           Nothing is charged here. You will be asked to pay when you collect your products,
-          and your position activates then.
+          and your position activates then. If your sponsor&rsquo;s {leg} leg is already full
+          you will be placed under someone below them — that is called spillover, and it is
+          normal.
         </p>
       </aside>
     </div>

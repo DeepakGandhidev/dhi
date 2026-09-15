@@ -22,10 +22,17 @@ list need `MONGODB_URI`.
 
 ### Environment
 
-| Variable         | Purpose                                          |
-| ---------------- | ------------------------------------------------ |
-| `MONGODB_URI`    | Connection string (Atlas or local `mongod`)      |
-| `ADMIN_PASSWORD` | Password for `/admin` and the member-list API    |
+| Variable         | Purpose                                            |
+| ---------------- | -------------------------------------------------- |
+| `MONGODB_URI`    | Connection string (Atlas or local `mongod`)        |
+| `ADMIN_PASSWORD` | Password for `/admin` and the member-list API      |
+| `SESSION_SECRET` | Long random string signing member login cookies    |
+
+Generate a session secret with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+```
 
 ## The plan lives in one file
 
@@ -51,8 +58,47 @@ The calculators are derived, not hard-coded:
 | `/plan`       | Direct sponsorship, binary, generations, Fast Cumulative, discounts |
 | `/calculator` | Direct sponsorship and binary matching calculators              |
 | `/awards`     | Star → Emerald → Diamond → Sapphire                             |
-| `/join`       | Registration form, writes to MongoDB, returns a member code     |
-| `/admin`      | Member list, gated by `ADMIN_PASSWORD`                          |
+| `/join`       | Registration form, places the member in the tree, returns a member code |
+| `/login`      | Member sign-in with member code and password                    |
+| `/dashboard`  | A member's own network: legs, tree, generations, direct recruits |
+| `/admin`      | Member list for the DHI office, gated by `ADMIN_PASSWORD`       |
+
+## Placement: sponsorship is not position
+
+These are two different relationships, and conflating them is the usual way a
+binary plan goes wrong.
+
+- **Sponsor** (`sponsorCode`) — who introduced you. Earns the direct bonus.
+- **Placement** (`placementParent` + `position`) — where you actually sit in
+  the tree.
+
+When someone registers, the sponsor names a leg. The system then walks down
+that leg **breadth-first** and drops the new member into the first open slot,
+left before right. If the sponsor's chosen leg is already full, the member
+*spills over* and is placed under someone below the sponsor — which is what
+lets a strong upline leg feed the people beneath it. The dashboard tells a
+member when this has happened, so nobody thinks they were placed wrongly.
+
+Two people can race for the same slot. A unique index on
+`{ placementParent, position }` rejects the loser, and the placement search
+re-runs, so concurrent registrations cannot produce two members in one
+position. This is covered by a concurrency test described below.
+
+The placement rule lives entirely in
+[`src/lib/placement.ts`](src/lib/placement.ts) — if DHI confirms a different
+rule (for example, the sponsor picking an exact slot), that is the only file
+that changes.
+
+## Member accounts
+
+Passwords are hashed with bcrypt (cost 12). Sessions are a signed, HttpOnly,
+SameSite=Lax cookie — an HMAC over the member code and an expiry, so the
+contents cannot be edited by the client. Sign-in returns the same message for a
+wrong password and an unknown member code, so the form cannot be used to
+discover which member codes exist.
+
+`/dashboard` is guarded server-side rather than by middleware; an anonymous or
+forged cookie is redirected to `/login`.
 
 ## API
 
@@ -62,6 +108,12 @@ allocates a unique `DHI-XXXXXX` code (retrying on collision). Returns `201` with
 the code, `422` with per-field errors, or `503` if `MONGODB_URI` is unset.
 
 `GET /api/members?key=<ADMIN_PASSWORD>` — the 200 most recent registrations.
+Never returns password hashes.
+
+`POST /api/auth/login` — member code and password, sets the session cookie.
+`POST /api/auth/logout` — clears it.
+`GET /api/auth/me` — whether a session cookie is present. Used only so the nav
+can show the right label without making every page dynamically rendered.
 
 ## Design
 
@@ -98,3 +150,10 @@ password.
   the DHI office; the award requirements on `/awards` describe the network shape
   from the plan, not published payout figures.
 - Registration records an intent to join; it does not take payment.
+- **There is no PV or earnings tracking yet.** The dashboard shows the network
+  — legs, tree, generations, direct recruits — but not volume or money. The
+  calculators on the public pages are illustrations you drive by hand, not
+  readings of live data. Paying real bonuses needs a PV ledger, per-cycle
+  carry-over state and payout records, which is a separate piece of work.
+- Members are created with `status: "pending"`. Nothing currently flips them to
+  `"active"` — the office needs a way to confirm payment.

@@ -1,20 +1,14 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase, dbConfigured } from "@/lib/mongodb";
-import { Member, generateMemberCode } from "@/lib/models";
+import { Member, generateMemberCode, type Leg } from "@/lib/models";
+import { findOpenSlot } from "@/lib/placement";
+import { hashPassword, startSession } from "@/lib/auth";
 import { PACKAGE_BY_ID, type PackageId } from "@/lib/plan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Body = {
-  fullName?: string;
-  phone?: string;
-  email?: string;
-  city?: string;
-  packageId?: string;
-  leg?: string;
-  sponsorCode?: string;
-};
+type Body = Record<string, string | undefined>;
 
 function validate(body: Body) {
   const errors: Record<string, string> = {};
@@ -32,6 +26,10 @@ function validate(body: Body) {
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     errors.email = "That email address is not valid.";
   }
+
+  const password = body.password ?? "";
+  if (password.length < 8) errors.password = "Use at least 8 characters.";
+  if (password.length > 200) errors.password = "That password is too long.";
 
   const packageId = body.packageId as PackageId;
   if (!packageId || !PACKAGE_BY_ID[packageId]) errors.packageId = "Choose a package.";
@@ -51,8 +49,9 @@ function validate(body: Body) {
       phone,
       email: email || undefined,
       city: body.city?.trim() || undefined,
+      password,
       packageId,
-      leg: leg as "left" | "right",
+      sponsorLeg: leg as Leg,
       sponsorCode: sponsorCode || undefined,
     },
   };
@@ -61,10 +60,7 @@ function validate(body: Body) {
 export async function POST(request: Request) {
   if (!dbConfigured) {
     return NextResponse.json(
-      {
-        error:
-          "Registration is not connected to a database yet. Set MONGODB_URI in .env.local and restart.",
-      },
+      { error: "Registration is not connected to a database yet. Set MONGODB_URI and restart." },
       { status: 503 }
     );
   }
@@ -85,41 +81,77 @@ export async function POST(request: Request) {
     await connectToDatabase();
 
     if (value.sponsorCode) {
-      const sponsor = await Member.findOne({ memberCode: value.sponsorCode }).lean();
+      const sponsor = await Member.findOne({ memberCode: value.sponsorCode }).select("memberCode").lean();
       if (!sponsor) {
         return NextResponse.json(
           { errors: { sponsorCode: "No member has that code. Check it with your sponsor." } },
           { status: 422 }
         );
       }
+    } else {
+      // Without a sponsor this member can only be the root, and there is one.
+      const rootExists = await Member.findOne({ placementParent: null }).select("_id").lean();
+      if (rootExists) {
+        return NextResponse.json(
+          { errors: { sponsorCode: "A sponsor code is required. Ask the member who introduced you." } },
+          { status: 422 }
+        );
+      }
     }
 
-    // Retry on the rare code collision rather than failing the registration.
+    const passwordHash = await hashPassword(value.password);
+
+    // Two people can race for the same slot. The unique index rejects the
+    // loser, so we re-run the search rather than hand out a duplicate position.
     let created = null;
-    for (let attempt = 0; attempt < 5 && !created; attempt++) {
-      const memberCode = generateMemberCode();
+    let lastError: unknown = null;
+
+    for (let attempt = 0; attempt < 6 && !created; attempt++) {
+      const slot = value.sponsorCode
+        ? await findOpenSlot(value.sponsorCode, value.sponsorLeg)
+        : { parent: null, position: null, depth: 0 };
+
       try {
-        created = await Member.create({ ...value, memberCode });
+        created = await Member.create({
+          fullName: value.fullName,
+          phone: value.phone,
+          email: value.email,
+          city: value.city,
+          packageId: value.packageId,
+          passwordHash,
+          sponsorCode: value.sponsorCode ?? null,
+          sponsorLeg: value.sponsorLeg,
+          placementParent: slot.parent,
+          position: slot.position,
+          depth: slot.depth,
+          memberCode: generateMemberCode(),
+        });
       } catch (err: unknown) {
-        const code = (err as { code?: number }).code;
-        if (code !== 11000) throw err;
+        lastError = err;
+        if ((err as { code?: number }).code !== 11000) throw err;
+        // Duplicate member code or a taken slot: try again.
       }
     }
 
     if (!created) {
+      console.error("[members] could not place member", lastError);
       return NextResponse.json(
-        { error: "Could not allocate a member code. Try again." },
+        { error: "We could not place you in the network. Try again in a moment." },
         { status: 500 }
       );
     }
 
-    const pkg = PACKAGE_BY_ID[value.packageId];
+    await startSession(created.memberCode);
+
     return NextResponse.json(
       {
         memberCode: created.memberCode,
         fullName: created.fullName,
-        packageName: pkg.name,
-        leg: created.leg,
+        packageName: PACKAGE_BY_ID[value.packageId].name,
+        placementParent: created.placementParent,
+        position: created.position,
+        depth: created.depth,
+        spilled: Boolean(value.sponsorCode) && created.placementParent !== value.sponsorCode,
         status: created.status,
       },
       { status: 201 }
@@ -152,7 +184,7 @@ export async function GET(request: Request) {
     const members = await Member.find({})
       .sort({ createdAt: -1 })
       .limit(200)
-      .select("-__v")
+      .select("-__v -passwordHash")
       .lean();
     return NextResponse.json({ count: members.length, members });
   } catch (err) {

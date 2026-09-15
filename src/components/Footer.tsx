@@ -29,6 +29,7 @@ export function Footer() {
           <div className={styles.col}>
             <h3 className={styles.colHead}>Get started</h3>
             <Link href="/join">Join DHI</Link>
+            <Link href="/login">Member sign in</Link>
             <Link href="/plan#binary">How the binary works</Link>
             <Link href="/plan#generations">Generations</Link>
           </div>

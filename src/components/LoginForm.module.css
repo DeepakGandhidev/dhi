@@ -1,0 +1,17 @@
+.wrap { max-width: 44ch; }
+.title { font-size: var(--t-2xl); font-stretch: 85%; line-height: 0.95; margin-bottom: 0.35em; }
+.form { display: grid; gap: 18px; margin-top: clamp(20px, 3vw, 30px); }
+.form button { justify-self: start; }
+
+.error {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: #fdecea;
+  border: 1px solid #f3c2bd;
+  color: #7f1d1a;
+  font-size: var(--t-s);
+  margin: 0;
+}
+
+.alt { margin-top: 26px; font-size: var(--t-s); color: var(--text-muted); }
+.alt a { color: var(--indigo); font-weight: 600; }
