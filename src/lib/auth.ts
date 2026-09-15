@@ -17,6 +17,12 @@ function secret() {
   return s;
 }
 
+/** Whether a usable SESSION_SECRET is present, without throwing. */
+export function sessionSecretConfigured() {
+  const s = process.env.SESSION_SECRET;
+  return Boolean(s && s.length >= 16);
+}
+
 export const hashPassword = (plain: string) => bcrypt.hash(plain, 12);
 export const verifyPassword = (plain: string, hash: string) => bcrypt.compare(plain, hash);
 

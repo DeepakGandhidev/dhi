@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectToDatabase, dbConfigured } from "@/lib/mongodb";
 import { Member, generateMemberCode, type Leg } from "@/lib/models";
 import { findOpenSlot } from "@/lib/placement";
-import { hashPassword, startSession } from "@/lib/auth";
+import { hashPassword, startSession, sessionSecretConfigured } from "@/lib/auth";
 import { PACKAGE_BY_ID, type PackageId } from "@/lib/plan";
 
 export const runtime = "nodejs";
@@ -65,6 +65,18 @@ export async function POST(request: Request) {
     );
   }
 
+  // Checked up front. Signing in needs this, and finding out after the member
+  // row exists would leave a half-registered person behind.
+  if (!sessionSecretConfigured()) {
+    return NextResponse.json(
+      {
+        error:
+          "Registration is not fully configured yet: SESSION_SECRET is missing. Nobody has been registered. Add it to the environment and try again.",
+      },
+      { status: 503 }
+    );
+  }
+
   let body: Body;
   try {
     body = await request.json();
@@ -93,7 +105,12 @@ export async function POST(request: Request) {
       const rootExists = await Member.findOne({ placementParent: null }).select("_id").lean();
       if (rootExists) {
         return NextResponse.json(
-          { errors: { sponsorCode: "A sponsor code is required. Ask the member who introduced you." } },
+          {
+            errors: {
+              sponsorCode:
+                "DHI already has members, so a sponsor code is required. Ask the person who introduced you for their code.",
+            },
+          },
           { status: 422 }
         );
       }
@@ -141,10 +158,20 @@ export async function POST(request: Request) {
       );
     }
 
-    await startSession(created.memberCode);
+    // The member exists now. If the session cookie cannot be issued we still
+    // report success and send them to sign in — never claim a saved
+    // registration failed.
+    let signedIn = true;
+    try {
+      await startSession(created.memberCode);
+    } catch (err) {
+      signedIn = false;
+      console.error("[members] registered but could not start session", err);
+    }
 
     return NextResponse.json(
       {
+        signedIn,
         memberCode: created.memberCode,
         fullName: created.fullName,
         packageName: PACKAGE_BY_ID[value.packageId].name,

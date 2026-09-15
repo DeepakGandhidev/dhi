@@ -114,3 +114,15 @@
   font-size: var(--t-s);
 }
 .doneNum { font-family: var(--display); font-weight: 700; color: var(--marigold); }
+
+/* Shown only when nobody has registered yet. */
+.firstNotice {
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  background: rgba(18, 144, 122, 0.1);
+  border: 1px solid var(--jade);
+  font-size: var(--t-s);
+  margin: 0 0 4px;
+  max-width: none;
+}
+.firstNotice strong { display: block; font-family: var(--display); font-size: var(--t-m); margin-bottom: 3px; }

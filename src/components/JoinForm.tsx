@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -13,7 +13,10 @@ import {
 } from "@/lib/plan";
 import styles from "@/app/join/page.module.css";
 
+type Network = { hasRoot: boolean; ready: boolean };
+
 type Success = {
+  signedIn: boolean;
   memberCode: string;
   fullName: string;
   packageName: string;
@@ -34,6 +37,21 @@ export function JoinForm() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<Success | null>(null);
+  const [network, setNetwork] = useState<Network | null>(null);
+
+  // Is anyone registered yet? Decides whether a sponsor code is needed.
+  useEffect(() => {
+    let live = true;
+    fetch("/api/network")
+      .then((r) => r.json())
+      .then((d: Network) => live && setNetwork(d))
+      .catch(() => live && setNetwork({ hasRoot: true, ready: false }));
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const isFirstMember = network?.ready === true && network.hasRoot === false;
 
   const pkg = PACKAGE_BY_ID[packageId];
 
@@ -110,8 +128,8 @@ export function JoinForm() {
         </ol>
 
         <div style={{ marginTop: 30, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <Link href="/dashboard" className="btn btn--ink">
-            Go to your dashboard
+          <Link href={done.signedIn ? "/dashboard" : "/login"} className="btn btn--ink">
+            {done.signedIn ? "Go to your dashboard" : "Sign in to your dashboard"}
           </Link>
           <Link href="/plan" className="btn btn--ghost">
             Read the plan
@@ -129,6 +147,14 @@ export function JoinForm() {
           Registration reserves your position and your member code. You pay for the package
           and collect your products at the DHI office.
         </p>
+
+        {isFirstMember ? (
+          <p className={styles.firstNotice}>
+            <strong>You are the first member.</strong> There is nobody to sponsor you, so leave
+            the sponsor code blank — you will sit at the top of the tree and everyone else
+            builds beneath you.
+          </p>
+        ) : null}
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
           {formError ? (
@@ -218,7 +244,7 @@ export function JoinForm() {
             {errors.packageId ? <p className={styles.error}>{errors.packageId}</p> : null}
           </fieldset>
 
-          <fieldset className={styles.fieldset}>
+          <fieldset className={styles.fieldset} hidden={isFirstMember}>
             <legend className={styles.legendText}>Which leg did your sponsor choose for you?</legend>
             <div className={styles.legOptions}>
               {(["left", "right"] as const).map((side) => (
@@ -244,8 +270,8 @@ export function JoinForm() {
             {errors.leg ? <p className={styles.error}>{errors.leg}</p> : null}
           </fieldset>
 
-          <label className="field">
-            <span>Sponsor code (optional)</span>
+          <label className="field" hidden={isFirstMember}>
+            <span>Sponsor code{network?.hasRoot === false ? " (optional)" : ""}</span>
             <input
               name="sponsorCode"
               placeholder="DHI-K4M2PQ"
@@ -253,8 +279,8 @@ export function JoinForm() {
               aria-invalid={Boolean(errors.sponsorCode)}
             />
             <small>
-              The code of the member who introduced you. Leave it blank if you are joining
-              directly.
+              The code of the member who introduced you. Ask them for it — without it we
+              cannot place you in their network.
             </small>
             {errors.sponsorCode ? <p className={styles.error}>{errors.sponsorCode}</p> : null}
           </label>
@@ -302,14 +328,19 @@ export function JoinForm() {
         </div>
         <div className={styles.asideRow}>
           <span>Placement</span>
-          <span>{leg === "left" ? "Left leg" : "Right leg"}, first open slot</span>
+          <span>
+            {isFirstMember
+              ? "Top of the tree"
+              : `${leg === "left" ? "Left leg" : "Right leg"}, first open slot`}
+          </span>
         </div>
 
         <p className={styles.asideNote}>
           Nothing is charged here. You will be asked to pay when you collect your products,
-          and your position activates then. If your sponsor&rsquo;s {leg} leg is already full
-          you will be placed under someone below them — that is called spillover, and it is
-          normal.
+          and your position activates then.{" "}
+          {isFirstMember
+            ? ""
+            : `If your sponsor's ${leg} leg is already full you will be placed under someone below them — that is called spillover, and it is normal.`}
         </p>
       </aside>
     </div>
