@@ -45,10 +45,14 @@ export async function connectToDatabase() {
   }
   if (cached.conn) return cached.conn;
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      bufferCommands: false,
-      serverSelectionTimeoutMS: 5000,
-    });
+    // Queries issued while this connection is still opening wait for it
+    // (Mongoose buffering), because server components query models directly.
+    cached.promise = mongoose
+      .connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 })
+      .catch((err) => {
+        cached.promise = null; // let the next request retry
+        throw err;
+      });
   }
   cached.conn = await cached.promise;
   return cached.conn;
