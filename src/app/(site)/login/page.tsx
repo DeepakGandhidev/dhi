@@ -16,6 +16,14 @@ export default async function LoginPage() {
   return (
     <section className="section section--tight">
       <div className="shell">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/dhi-logo.jpg"
+          alt="Divine Health International"
+          width={180}
+          height={180}
+          style={{ display: "block", width: 180, height: "auto", margin: "0 0 20px", borderRadius: 24 }}
+        />
         <LoginForm />
       </div>
     </section>

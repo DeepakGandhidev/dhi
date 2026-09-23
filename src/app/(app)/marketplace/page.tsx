@@ -38,7 +38,7 @@ export default async function MarketplacePage({ searchParams }: { searchParams: 
     currentMember(),
     getRules(),
     listCategories(),
-    listProducts({ q, category: category || undefined, sort, page, perPage: 12 }),
+    listProducts({ q, category: category || undefined, sort, page, perPage: 24 }),
   ]);
   const reviews = await reviewSummaries(list.items.map((p) => p.slug));
   const catName = new Map(categories.map((c) => [c.slug, c.name]));
@@ -137,7 +137,7 @@ export default async function MarketplacePage({ searchParams }: { searchParams: 
         </div>
       )}
 
-      <Pager page={page} total={list.total} perPage={12} href={(p) => href({ page: p })} />
+      <Pager page={page} total={list.total} perPage={24} href={(p) => href({ page: p })} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Cart, Category, Order, Product, Review, type ProductDoc } from "../models";
 import { BusinessError } from "./tx";
+import { ensureCatalog } from "../demoCatalog";
 
 /* ---- Catalogue ---------------------------------------------------------- */
 
@@ -13,6 +14,7 @@ export type ProductQuery = {
 };
 
 export async function listProducts(query: ProductQuery) {
+  await ensureCatalog();
   const page = Math.max(1, query.page ?? 1);
   const perPage = Math.min(48, Math.max(1, query.perPage ?? 12));
   const filter: Record<string, unknown> = { status: "active" };
@@ -32,7 +34,10 @@ export async function listProducts(query: ProductQuery) {
   return { items, total, page, perPage, pages: Math.max(1, Math.ceil(total / perPage)) };
 }
 
-export const listCategories = () => Category.find().sort({ order: 1, name: 1 }).lean();
+export async function listCategories() {
+  await ensureCatalog();
+  return Category.find().sort({ order: 1, name: 1 }).lean();
+}
 
 export const getProduct = (slug: string) =>
   Product.findOne({ slug, status: "active" }).lean<ProductDoc>();

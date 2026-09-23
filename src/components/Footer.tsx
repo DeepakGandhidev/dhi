@@ -8,7 +8,7 @@ export function Footer() {
     <footer className={styles.footer}>
       <div className={`shell ${styles.inner}`}>
         <div className={styles.brandCol}>
-          <Logo size={44} tone="#f4f5f8" />
+          <Logo size={64} />
           <p className={styles.tagline}>
             DHI International. Products you can sell, a plan you can count on a hand.
           </p>
