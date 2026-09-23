@@ -47,8 +47,11 @@ export async function registerMember(value: Registration) {
 
   // Two people can race for the same slot. The unique index rejects the
   // loser, so we re-run the search rather than hand out a duplicate position.
+  // Each round at most one racer wins a slot, so the retry budget has to
+  // exceed the number of people who might register under one leg at once.
   let lastError: unknown = null;
-  for (let attempt = 0; attempt < 6; attempt++) {
+  for (let attempt = 0; attempt < 25; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, Math.random() * 40 * Math.min(attempt, 5)));
     const slot = value.sponsorCode
       ? await findOpenSlot(value.sponsorCode, value.sponsorLeg)
       : { parent: null, position: null, depth: 0, lineage: [] };

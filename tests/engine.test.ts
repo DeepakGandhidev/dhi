@@ -40,7 +40,7 @@ describe("registration and placement", () => {
 
   it("never puts two members in one slot, even when registering concurrently", async () => {
     const root = await joinActive(undefined);
-    const codes = await Promise.all(Array.from({ length: 8 }, () => join(root, "left")));
+    const codes = await Promise.all(Array.from({ length: 16 }, () => join(root, "left")));
     const placed = await Member.find({ memberCode: { $in: codes } }).lean();
     const slots = placed.map((m) => `${m.placementParent}:${m.position}`);
     expect(new Set(slots).size).toBe(codes.length);
