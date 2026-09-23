@@ -25,6 +25,7 @@ export function Footer() {
             <Link href="/plan">Bonuses</Link>
             <Link href="/calculator">Calculator</Link>
             <Link href="/awards">Awards</Link>
+            <Link href="/about">About us</Link>
           </div>
           <div className={styles.col}>
             <h3 className={styles.colHead}>Get started</h3>
