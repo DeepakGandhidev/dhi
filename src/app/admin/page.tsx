@@ -1,24 +1,15 @@
-import type { Metadata } from "next";
-import { AdminMembers } from "@/components/AdminMembers";
+import { Suspense } from "react";
+import { isAdmin } from "@/lib/api";
+import { AdminConsole, AdminLogin } from "@/components/admin/AdminConsole";
 
-export const metadata: Metadata = {
-  title: "Members",
-  robots: { index: false, follow: false },
-};
+export const dynamic = "force-dynamic";
 
-export default function AdminPage() {
+/** The DHI office console. Access is a signed, HttpOnly admin session cookie. */
+export default async function AdminPage() {
+  if (!(await isAdmin())) return <AdminLogin />;
   return (
-    <section className="section section--tight">
-      <div className="shell">
-        <h1 style={{ fontSize: "var(--t-xl)", fontStretch: "90%", marginBottom: "0.4em" }}>
-          Registered members
-        </h1>
-        <p className="lede">
-          Everyone who has filled in the registration form, newest first. Enter the admin
-          password to load the list.
-        </p>
-        <AdminMembers />
-      </div>
-    </section>
+    <Suspense fallback={null}>
+      <AdminConsole />
+    </Suspense>
   );
 }

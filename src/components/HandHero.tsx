@@ -50,7 +50,7 @@ export function HandHero() {
               </div>
               <div className={styles.fact}>
                 <span className={`${styles.factNum} num`}>{NETWORK_TOTAL} positions</span>
-                <span className={styles.factLabel}>Five generations, you included</span>
+                <span className={styles.factLabel}>Eight generations, you included</span>
               </div>
               <div className={styles.fact}>
                 <span className={`${styles.factNum} num`}>Up to 50%</span>

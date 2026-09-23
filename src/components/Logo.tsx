@@ -30,10 +30,10 @@ export function Logo({ size = 34, tone = "currentColor", accent = "var(--marigol
   );
 }
 
-export function Wordmark({ size = 34 }: { size?: number }) {
+export function Wordmark({ size = 34, tone }: { size?: number; tone?: string }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-      <Logo size={size} />
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 10, color: tone }}>
+      <Logo size={size} tone={tone} />
       <span
         style={{
           fontFamily: "var(--display)",

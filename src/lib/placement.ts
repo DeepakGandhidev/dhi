@@ -1,4 +1,4 @@
-import { Member, type Leg } from "./models";
+import { Member, type Leg, type LineageStep } from "./models";
 
 /**
  * Binary placement with spillover.
@@ -12,22 +12,35 @@ import { Member, type Leg } from "./models";
  * balanced as it can rather than growing one long thread.
  */
 
-export type Slot = { parent: string; position: Leg; depth: number };
+export type Slot = { parent: string; position: Leg; depth: number; lineage: LineageStep[] };
 
-type Node = { memberCode: string; depth: number };
+type Node = { memberCode: string; depth: number; lineage: LineageStep[] };
+
+/** A new member's lineage: the parent's, plus the parent itself. */
+const lineageUnder = (parent: Node, position: Leg): LineageStep[] => [
+  ...(parent.lineage ?? []),
+  { m: parent.memberCode, leg: position },
+];
+
+const slot = (parent: Node, position: Leg): Slot => ({
+  parent: parent.memberCode,
+  position,
+  depth: parent.depth + 1,
+  lineage: lineageUnder(parent, position),
+});
 
 /** The first open slot at or below `rootCode`, searching the `leg` side first. */
 export async function findOpenSlot(rootCode: string, leg: Leg): Promise<Slot> {
   const root = await Member.findOne({ memberCode: rootCode })
-    .select("memberCode depth")
+    .select("memberCode depth lineage")
     .lean<Node>();
   if (!root) throw new Error(`No member with code ${rootCode}`);
 
   // Level 1: the sponsor's own chosen leg, if it is free.
   const direct = await Member.findOne({ placementParent: rootCode, position: leg })
-    .select("memberCode depth")
+    .select("memberCode depth lineage")
     .lean<Node>();
-  if (!direct) return { parent: rootCode, position: leg, depth: root.depth + 1 };
+  if (!direct) return slot(root, leg);
 
   // Otherwise walk down that subtree, level by level, taking the first gap.
   let frontier: Node[] = [direct];
@@ -35,7 +48,7 @@ export async function findOpenSlot(rootCode: string, leg: Leg): Promise<Slot> {
   while (frontier.length > 0) {
     const codes = frontier.map((n) => n.memberCode);
     const children = await Member.find({ placementParent: { $in: codes } })
-      .select("memberCode depth placementParent position")
+      .select("memberCode depth lineage placementParent position")
       .lean<(Node & { placementParent: string; position: Leg })[]>();
 
     const taken = new Map<string, Set<Leg>>();
@@ -47,106 +60,12 @@ export async function findOpenSlot(rootCode: string, leg: Leg): Promise<Slot> {
     // Left before right, so slots fill in a predictable order.
     for (const node of frontier) {
       const used = taken.get(node.memberCode) ?? new Set<Leg>();
-      if (!used.has("left")) return { parent: node.memberCode, position: "left", depth: node.depth + 1 };
-      if (!used.has("right")) return { parent: node.memberCode, position: "right", depth: node.depth + 1 };
+      if (!used.has("left")) return slot(node, "left");
+      if (!used.has("right")) return slot(node, "right");
     }
 
-    frontier = children.map((c) => ({ memberCode: c.memberCode, depth: c.depth }));
+    frontier = children.map((c) => ({ memberCode: c.memberCode, depth: c.depth, lineage: c.lineage }));
   }
 
   throw new Error("No open slot found");
-}
-
-export type TreeNode = {
-  memberCode: string;
-  fullName: string;
-  packageId: string;
-  position: Leg | null;
-  depth: number;
-  status: string;
-  createdAt: string;
-  sponsorCode: string | null;
-  left: TreeNode | null;
-  right: TreeNode | null;
-};
-
-/**
- * The subtree under `rootCode`, down to `generations` levels.
- * Fetched level by level so a deep network costs a fixed number of queries
- * rather than one per node.
- */
-export async function loadDownline(rootCode: string, generations: number) {
-  const root = await Member.findOne({ memberCode: rootCode })
-    .select("memberCode fullName packageId position depth status createdAt sponsorCode")
-    .lean<Record<string, unknown>>();
-  if (!root) return null;
-
-  const toNode = (d: Record<string, unknown>): TreeNode => ({
-    memberCode: d.memberCode as string,
-    fullName: d.fullName as string,
-    packageId: d.packageId as string,
-    position: (d.position as Leg) ?? null,
-    depth: d.depth as number,
-    status: d.status as string,
-    createdAt: new Date(d.createdAt as string).toISOString(),
-    sponsorCode: (d.sponsorCode as string) ?? null,
-    left: null,
-    right: null,
-  });
-
-  const rootNode = toNode(root);
-  const byCode = new Map<string, TreeNode>([[rootNode.memberCode, rootNode]]);
-  let frontier = [rootNode.memberCode];
-  const perGeneration: number[] = [];
-
-  for (let gen = 0; gen < generations && frontier.length > 0; gen++) {
-    const children = await Member.find({ placementParent: { $in: frontier } })
-      .select("memberCode fullName packageId position depth status createdAt sponsorCode placementParent")
-      .lean<Record<string, unknown>[]>();
-
-    perGeneration.push(children.length);
-    const next: string[] = [];
-
-    for (const child of children) {
-      const node = toNode(child);
-      const parent = byCode.get(child.placementParent as string);
-      if (parent) {
-        if (node.position === "left") parent.left = node;
-        else parent.right = node;
-      }
-      byCode.set(node.memberCode, node);
-      next.push(node.memberCode);
-    }
-    frontier = next;
-  }
-
-  return { root: rootNode, perGeneration, total: byCode.size - 1 };
-}
-
-/** How many people sit on each side of a member, to the full depth of the tree. */
-export async function legTotals(rootCode: string) {
-  const count = async (startCode: string) => {
-    let frontier = [startCode];
-    let total = 0;
-    while (frontier.length > 0) {
-      const children = await Member.find({ placementParent: { $in: frontier } })
-        .select("memberCode")
-        .lean<{ memberCode: string }[]>();
-      total += children.length;
-      frontier = children.map((c) => c.memberCode);
-    }
-    return total;
-  };
-
-  const [leftChild, rightChild] = await Promise.all([
-    Member.findOne({ placementParent: rootCode, position: "left" }).select("memberCode").lean<{ memberCode: string }>(),
-    Member.findOne({ placementParent: rootCode, position: "right" }).select("memberCode").lean<{ memberCode: string }>(),
-  ]);
-
-  const [left, right] = await Promise.all([
-    leftChild ? count(leftChild.memberCode).then((n) => n + 1) : Promise.resolve(0),
-    rightChild ? count(rightChild.memberCode).then((n) => n + 1) : Promise.resolve(0),
-  ]);
-
-  return { left, right, weaker: left === right ? ("balanced" as const) : left < right ? ("left" as const) : ("right" as const) };
 }

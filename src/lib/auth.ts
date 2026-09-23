@@ -94,3 +94,36 @@ export async function currentMember(): Promise<MemberDoc | null> {
 }
 
 export const generateSecret = () => randomBytes(32).toString("base64url");
+
+/**
+ * Tamper-proof values for other cookies (affiliate attribution). The value is
+ * base64url JSON, signed with the session secret under a separate purpose so
+ * a signed affiliate cookie can never be replayed as a session.
+ */
+export function signValue(purpose: string, data: unknown, ttlSeconds: number) {
+  const body = Buffer.from(
+    JSON.stringify({ d: data, e: Date.now() + ttlSeconds * 1000 })
+  ).toString("base64url");
+  return `${body}.${sign(`${purpose}:${body}`)}`;
+}
+
+export function verifyValue<T>(purpose: string, token: string | undefined | null): T | null {
+  if (!token) return null;
+  const [body, mac] = token.split(".");
+  if (!body || !mac) return null;
+  let expected: string;
+  try {
+    expected = sign(`${purpose}:${body}`);
+  } catch {
+    return null;
+  }
+  const a = Buffer.from(mac);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(body, "base64url").toString()) as { d: T; e: number };
+    return parsed.e > Date.now() ? parsed.d : null;
+  } catch {
+    return null;
+  }
+}

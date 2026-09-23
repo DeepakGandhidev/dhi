@@ -1,7 +1,7 @@
 # DHI International
 
-Marketing and registration site for the DHI compensation plan, built with
-Next.js (App Router) and MongoDB.
+Public site, member portal, marketplace and back office for the DHI
+compensation plan, built with Next.js (App Router) and MongoDB.
 
 ## Running it
 
@@ -14,7 +14,20 @@ npm run dev                  # http://localhost:3000
 If you do not have MongoDB installed, run a throwaway one in a second terminal:
 
 ```bash
-npm run dev:db               # starts MongoDB on 127.0.0.1:27017, data is discarded
+npm run dev:db               # replica set on 127.0.0.1:27017, data is discarded
+# MONGODB_URI="mongodb://127.0.0.1:27017/dhi?replicaSet=dev"
+```
+
+Every purchase, bonus and payout is written in a MongoDB **transaction**, and
+MongoDB only allows transactions on a replica set. Atlas always is one; a plain
+standalone `mongod` is not and will fail at the first activation.
+
+```bash
+npm test                     # 56 tests: calculations, engine, marketplace (in-memory replica set)
+npm run db:migrate           # once, on an existing database: lineage + package orders + indexes
+npm run db:seed              # demo categories and products (flagged demo: true)
+npm run db:seed -- --network # plus a 31-member demo network with activity (dev only)
+npm run db:seed -- --remove  # delete the demo products and categories
 ```
 
 The marketing pages work without a database. Only registration and the member
@@ -142,6 +155,63 @@ The site is a standard Next.js app and deploys to Vercel with no extra config.
 `.env.local` is git-ignored and must never be committed — it holds the database
 password.
 
+## Member portal, marketplace and back office
+
+| Route | What it does |
+| --- | --- |
+| `/dashboard` | Accueil: member code, pack, PV, network, generations, both legs, wallet, award progress, referral link |
+| `/dashboard/reseau` | Lazy-loaded binary tree, generations 1–8 with fill and PV, per-generation lists, direct recruits |
+| `/dashboard/bonus` | One tab per mechanism, each with totals, this month, history and the calculation |
+| `/dashboard/paiements` | Wallet, earnings by type, withdrawal requests, full history |
+| `/dashboard/awards` | Star, Émeraude, Diamond, Sapphir: every requirement with its own progress bar |
+| `/dashboard/affiliation` | Clicks, sales, commissions |
+| `/dashboard/profil`, `/commandes`, `/notifications` | Profile (phone, email and password need the current password), orders, notifications |
+| `/marketplace`, `/marketplace/[slug]` | Catalogue with search, categories, member prices; product page with Partagez & gagnez |
+| `/marketplace/panier`, `/commande` | Cart and checkout, for members and guests |
+| `/admin` | Queues, member activation, order lifecycle, payouts, products, reviews, award delivery, ledger inspection with corrections, versioned business rules |
+
+Portal wording lives in [`src/i18n/fr.ts`](src/i18n/fr.ts).
+
+### How the money flows
+
+Registration opens a **package order**. Nothing is paid until the office confirms
+the payment in `/admin`, which **activates** the member in one transaction:
+
+1. the package PV goes into the PV ledger;
+2. that PV is added to the left or right leg of every ancestor up to 7 levels up
+   (generation 8, counting the ancestor as 1), and each ancestor's legs are
+   matched: whole 25 PV pairs pay the package binary rate, the rest carries forward;
+3. the sponsor's direct bonus is paid (pending if the sponsor's own pack is not yet confirmed);
+4. Fast Cumulation and awards are re-evaluated up the line.
+
+Marketplace orders follow `pending → confirmed (paid) → processing → shipped →
+delivered`. Payment credits the buyer's PV and an affiliate commission as
+*pending*; delivery makes the commission payable; cancellation or refund
+restores stock and reverses both.
+
+Every figure is a ledger entry with its source, the rate used and the rules
+version: `PvEntry`, `VolumeEntry`, `BonusEntry`, `Payout`. Wallet balances are
+kept in the same transactions and can be recomputed from the ledger
+(`/admin` → Registre shows whether they match).
+
+### Rules that were interpreted — confirm with DHI
+
+All of these are single settings in `/admin` → Configuration or in [`plan.ts`](src/lib/plan.ts):
+
+- **Generations** count the member as generation 1: eight generations = 254
+  people below, 255 positions.
+- **Award PV** is group volume: own PV plus downline PV within eight generations.
+  Award packages are "at least" (a Thumb member qualifies for Middle requirements).
+- **Fast Cumulation** unlocks at 254 active people within eight generations. Its
+  amount is not published, so it is 0 (qualification recorded) until set.
+- **Rounding**: amounts are whole FCFA and rates basis points; each payout is
+  rounded down once (22.5% of one pair is 2 812 FCFA, not 2 812.5).
+- **Direct bonus** is the sponsor's rate on the PV value of the recruit's package.
+- **Affiliate commission** is 8% of what the customer paid, per product overridable,
+  attributed for 30 days by a signed cookie, never to the buyer themselves.
+- **Refunded PV** that was already matched and paid is not clawed back; the
+  shortfall is recorded on the volume entry for review.
+
 ## Before going live
 
 - Replace the placeholder photography and the two member quotes on the home page
@@ -150,10 +220,10 @@ password.
   the DHI office; the award requirements on `/awards` describe the network shape
   from the plan, not published payout figures.
 - Registration records an intent to join; it does not take payment.
-- **There is no PV or earnings tracking yet.** The dashboard shows the network
-  — legs, tree, generations, direct recruits — but not volume or money. The
-  calculators on the public pages are illustrations you drive by hand, not
-  readings of live data. Paying real bonuses needs a PV ledger, per-cycle
-  carry-over state and payout records, which is a separate piece of work.
-- Members are created with `status: "pending"`. Nothing currently flips them to
-  `"active"` — the office needs a way to confirm payment.
+- Run `npm run db:migrate` once against the production database before deploying
+  this version, and `npm run db:seed -- --remove` once real products are in.
+- There is no payment gateway: the office confirms Mobile Money / cash payments
+  and pays withdrawals by hand, entering the transaction reference each time.
+- Product photos are URLs entered in the admin; there is no upload storage.
+- Set `SITE_URL` (e.g. `https://dhi.example`) so shared referral and product
+  links use the public domain.

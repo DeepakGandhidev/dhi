@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase, dbConfigured, databaseNameFromUri } from "@/lib/mongodb";
-import { Member, generateMemberCode, type Leg } from "@/lib/models";
-import { findOpenSlot } from "@/lib/placement";
+import { Member, type Leg } from "@/lib/models";
+import { registerMember } from "@/lib/services/members";
+import { BusinessError } from "@/lib/services/tx";
+import { allow, clientIp } from "@/lib/services/rateLimit";
 import { hashPassword, startSession, sessionSecretStatus, sessionSecretProblem } from "@/lib/auth";
+import { isAdmin } from "@/lib/api";
 import { PACKAGE_BY_ID, type PackageId } from "@/lib/plan";
 
 export const runtime = "nodejs";
@@ -100,73 +103,20 @@ export async function POST(request: Request) {
   try {
     await connectToDatabase();
 
-    if (value.sponsorCode) {
-      const sponsor = await Member.findOne({ memberCode: value.sponsorCode }).select("memberCode").lean();
-      if (!sponsor) {
-        return NextResponse.json(
-          { errors: { sponsorCode: "No member has that code. Check it with your sponsor." } },
-          { status: 422 }
-        );
-      }
-    } else {
-      // Without a sponsor this member can only be the root, and there is one.
-      const rootExists = await Member.findOne({ placementParent: { $type: "null" } })
-        .select("_id")
-        .lean();
-      if (rootExists) {
-        return NextResponse.json(
-          {
-            errors: {
-              sponsorCode:
-                "DHI already has members, so a sponsor code is required. Ask the person who introduced you for their code.",
-            },
-          },
-          { status: 422 }
-        );
-      }
+    if (!(await allow(`register:${clientIp(request)}`, 10, 3600))) {
+      return NextResponse.json({ error: "Too many registrations from this connection. Try again later." }, { status: 429 });
     }
 
-    const passwordHash = await hashPassword(value.password);
-
-    // Two people can race for the same slot. The unique index rejects the
-    // loser, so we re-run the search rather than hand out a duplicate position.
-    let created = null;
-    let lastError: unknown = null;
-
-    for (let attempt = 0; attempt < 6 && !created; attempt++) {
-      const slot = value.sponsorCode
-        ? await findOpenSlot(value.sponsorCode, value.sponsorLeg)
-        : { parent: null, position: null, depth: 0 };
-
-      try {
-        created = await Member.create({
-          fullName: value.fullName,
-          phone: value.phone,
-          email: value.email,
-          city: value.city,
-          packageId: value.packageId,
-          passwordHash,
-          sponsorCode: value.sponsorCode ?? null,
-          sponsorLeg: value.sponsorLeg,
-          placementParent: slot.parent,
-          position: slot.position,
-          depth: slot.depth,
-          memberCode: generateMemberCode(),
-        });
-      } catch (err: unknown) {
-        lastError = err;
-        if ((err as { code?: number }).code !== 11000) throw err;
-        // Duplicate member code or a taken slot: try again.
-      }
-    }
-
-    if (!created) {
-      console.error("[members] could not place member", lastError);
-      return NextResponse.json(
-        { error: "We could not place you in the network. Try again in a moment." },
-        { status: 500 }
-      );
-    }
+    const created = await registerMember({
+      fullName: value.fullName,
+      phone: value.phone,
+      email: value.email,
+      city: value.city,
+      passwordHash: await hashPassword(value.password),
+      packageId: value.packageId,
+      sponsorLeg: value.sponsorLeg,
+      sponsorCode: value.sponsorCode,
+    });
 
     // The member exists now. If the session cookie cannot be issued we still
     // report success and send them to sign in — never claim a saved
@@ -194,6 +144,11 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (err) {
+    if (err instanceof BusinessError) {
+      return err.field
+        ? NextResponse.json({ errors: { [err.field]: err.message } }, { status: err.status })
+        : NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error("[members] registration failed", err);
     return NextResponse.json(
       { error: "We could not save your registration. Try again in a moment." },
@@ -202,14 +157,17 @@ export async function POST(request: Request) {
   }
 }
 
-/** Admin listing. Guarded by ADMIN_PASSWORD, sent as ?key= or a Bearer token. */
+/**
+ * Admin listing. Accepts the admin session cookie, or ADMIN_PASSWORD as
+ * ?key= / a Bearer token for scripts.
+ */
 export async function GET(request: Request) {
   const adminPassword = process.env.ADMIN_PASSWORD;
   const url = new URL(request.url);
   const key =
     url.searchParams.get("key") ?? request.headers.get("authorization")?.replace("Bearer ", "");
 
-  if (!adminPassword || key !== adminPassword) {
+  if (!(await isAdmin()) && (!adminPassword || key !== adminPassword)) {
     return NextResponse.json({ error: "Not authorised." }, { status: 401 });
   }
   if (!dbConfigured) {

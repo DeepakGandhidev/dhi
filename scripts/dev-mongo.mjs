@@ -1,15 +1,20 @@
 /**
  * Starts a throwaway MongoDB on 127.0.0.1:27017 so the site can be run
  * without installing MongoDB. Data is discarded when you stop it.
- * For real data, point MONGODB_URI at Atlas or a local mongod instead.
+ *
+ * It is a single-node replica set, because every purchase, bonus and payout
+ * is written in a transaction and MongoDB only allows those on a replica
+ * set. Set MONGODB_URI to mongodb://127.0.0.1:27017/dhi?replicaSet=dev
  */
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 
-const mongo = await MongoMemoryServer.create({
-  instance: { port: 27017, dbName: "dhi" },
+const mongo = await MongoMemoryReplSet.create({
+  replSet: { name: "dev", count: 1, storageEngine: "wiredTiger" },
+  instanceOpts: [{ port: 27017 }],
 });
 
-console.log(`\n  Dev MongoDB ready at ${mongo.getUri()}dhi`);
+console.log("\n  Dev MongoDB (replica set) ready.");
+console.log("  MONGODB_URI=mongodb://127.0.0.1:27017/dhi?replicaSet=dev");
 console.log("  Leave this running and start the site with: npm run dev\n");
 
 const stop = async () => {

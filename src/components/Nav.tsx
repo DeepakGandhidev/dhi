@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/calculator", label: "Calculator" },
   { href: "/awards", label: "Awards" },
   { href: "/about", label: "About us" },
+  { href: "/marketplace", label: "Marketplace" },
 ];
 
 export function Nav() {

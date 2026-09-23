@@ -14,7 +14,7 @@ export function Footer() {
           </p>
           <p className={styles.meta}>
             <span className="num">1 PV = {PV_VALUE} FCFA</span> ·{" "}
-            <span className="num">{NETWORK_TOTAL} positions across five generations</span>
+            <span className="num">{NETWORK_TOTAL} positions across eight generations</span>
           </p>
         </div>
 
@@ -26,6 +26,7 @@ export function Footer() {
             <Link href="/calculator">Calculator</Link>
             <Link href="/awards">Awards</Link>
             <Link href="/about">About us</Link>
+            <Link href="/marketplace">Marketplace</Link>
           </div>
           <div className={styles.col}>
             <h3 className={styles.colHead}>Get started</h3>

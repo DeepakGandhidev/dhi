@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { connectToDatabase, dbConfigured } from "@/lib/mongodb";
 import { Member } from "@/lib/models";
 import { verifyPassword, startSession } from "@/lib/auth";
+import { guestCartOwner } from "@/lib/api";
+import { mergeCarts } from "@/lib/services/catalog";
+import { allow, clientIp } from "@/lib/services/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +30,12 @@ export async function POST(request: Request) {
 
   try {
     await connectToDatabase();
+    if (!(await allow(`login:${clientIp(request)}`, 10, 900))) {
+      return NextResponse.json(
+        { error: "Too many sign-in attempts. Wait a few minutes and try again." },
+        { status: 429 }
+      );
+    }
     const member = await Member.findOne({ memberCode }).select("memberCode passwordHash").lean<{
       memberCode: string;
       passwordHash: string;
@@ -43,6 +52,8 @@ export async function POST(request: Request) {
     }
 
     await startSession(member.memberCode);
+    const guest = await guestCartOwner();
+    if (guest) await mergeCarts(guest, `m:${member.memberCode}`).catch(() => {});
     return NextResponse.json({ memberCode: member.memberCode });
   } catch (err) {
     console.error("[auth] login failed", err);

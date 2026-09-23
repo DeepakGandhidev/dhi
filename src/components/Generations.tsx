@@ -12,7 +12,7 @@ export function Generations() {
       <div className={styles.stack}>
         <Reveal className={styles.you}>
           <span className={styles.youDot} />
-          <span className={styles.youLabel}>You</span>
+          <span className={styles.youLabel}>You · generation 1</span>
         </Reveal>
 
         {GENERATIONS.map((g, i) => (
@@ -21,7 +21,7 @@ export function Generations() {
               <span className={styles.rowGen}>Generation {g.level}</span>
               <span className={`${styles.rowCount} num`}>{g.people}</span>
             </div>
-            <div className={styles.dots} style={{ "--n": g.people } as React.CSSProperties}>
+            <div className={styles.dots} style={{ "--n": Math.min(g.people, 32) } as React.CSSProperties}>
               {Array.from({ length: g.people }, (_, d) => (
                 <span
                   key={d}
@@ -38,12 +38,12 @@ export function Generations() {
         <div>
           <div className={`${styles.totalNum} num`}>{NETWORK_BELOW}</div>
           <p className={styles.totalLabel}>
-            people below you once all five generations are filled —{" "}
+            people below you once all eight generations are filled —{" "}
             <span className="num">{NETWORK_TOTAL}</span> positions counting your own.
           </p>
         </div>
         <p className={styles.totalNote}>
-          The binary bonus is paid down to the fifth generation. Volume created deeper than
+          The binary bonus is paid down to the eighth generation. Volume created deeper than
           that still builds your legs; it stops adding to this bonus.
         </p>
       </Reveal>

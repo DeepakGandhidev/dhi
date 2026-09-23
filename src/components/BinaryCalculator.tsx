@@ -163,7 +163,7 @@ export function BinaryCalculator() {
         </div>
 
         <p className={styles.note}>
-          The binary bonus is paid down to your fifth generation. Unmatched volume stays on
+          The binary bonus is paid down to your eighth generation. Unmatched volume stays on
           the leg and matches as soon as the other side catches up.
         </p>
       </div>

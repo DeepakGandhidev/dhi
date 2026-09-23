@@ -11,7 +11,7 @@ import {
   pvToFcfa,
   type PackageId,
 } from "@/lib/plan";
-import styles from "@/app/join/page.module.css";
+import styles from "@/app/(site)/join/page.module.css";
 
 type Network = { hasRoot: boolean; ready: boolean };
 
@@ -28,6 +28,10 @@ type Success = {
 export function JoinForm() {
   const params = useSearchParams();
   const preselected = params.get("package");
+  // A referral link (/join?ref=DHI-XXXXXX) fills in the sponsor. The server
+  // still checks the code against a real member before using it.
+  const ref = params.get("ref")?.trim().toUpperCase() ?? "";
+  const referral = /^DHI-[A-Z0-9]{4,10}$/.test(ref) ? ref : "";
   const initial: PackageId =
     preselected && preselected in PACKAGE_BY_ID ? (preselected as PackageId) : "ring";
 
@@ -275,12 +279,14 @@ export function JoinForm() {
             <input
               name="sponsorCode"
               placeholder="DHI-K4M2PQ"
+              defaultValue={referral}
               style={{ textTransform: "uppercase" }}
               aria-invalid={Boolean(errors.sponsorCode)}
             />
             <small>
-              The code of the member who introduced you. Ask them for it — without it we
-              cannot place you in their network.
+              {referral
+                ? "Filled in from the invitation link you followed."
+                : "The code of the member who introduced you. Ask them for it — without it we cannot place you in their network."}
             </small>
             {errors.sponsorCode ? <p className={styles.error}>{errors.sponsorCode}</p> : null}
           </label>
