@@ -171,3 +171,15 @@ describe("award evaluation", () => {
     expect(evaluateAward(t("diamond"), { ...ok, packageId: "thumb" }).eligible).toBe(true);
   });
 });
+
+describe("half PV", () => {
+  it("accepts steps of 0.5 and keeps sums exact", async () => {
+    const { isPv } = await import("@/lib/money");
+    expect([0, 1.5, 25, -1.5].every(isPv)).toBe(true);
+    expect([0.1, 1.25, NaN, Infinity, "2"].some(isPv)).toBe(false);
+    // 17 × 1.5 PV reaches exactly 25.5 — one pair, 0.5 carried.
+    const total = Array.from({ length: 17 }, () => 1.5).reduce((a, b) => a + b, 0);
+    expect(total).toBe(25.5);
+    expect(matchLegs(total, 25, 25)).toMatchObject({ pairs: 1, carryLeft: 0.5, carryRight: 0 });
+  });
+});

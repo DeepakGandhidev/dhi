@@ -1,5 +1,6 @@
 import mongoose, { Schema, models, model } from "mongoose";
 import type { Leg } from "./member";
+import { isPv } from "../money";
 
 /**
  * The financial record. Entries here are append-only: a mistake is corrected
@@ -41,7 +42,7 @@ export interface PvEntryDoc {
 const PvEntrySchema = new Schema<PvEntryDoc>(
   {
     member: { type: String, required: true, index: true },
-    pv: { type: Number, required: true, validate: Number.isInteger },
+    pv: { type: Number, required: true, validate: isPv },
     type: { type: String, enum: PV_TYPES, required: true },
     sourceType: { type: String, enum: ["order", "admin"], required: true },
     sourceId: { type: String, required: true },

@@ -11,11 +11,14 @@ import mongoose from "mongoose";
 import { connectToDatabase } from "../src/lib/mongodb";
 import { Category, Member, Product } from "../src/lib/models";
 import { DEMO_CATEGORIES, DEMO_PRODUCTS, seedDemoCatalog } from "../src/lib/demoCatalog";
+import { DHI_PRODUCTS, seedDhiCatalog } from "../src/lib/dhiCatalog";
 import { hashPassword } from "../src/lib/auth";
 import { activateMember, registerMember } from "../src/lib/services/members";
 import type { PackageId } from "../src/lib/plan";
 
 async function seedCatalogue() {
+  await seedDhiCatalog();
+  console.log(`DHI range: ${DHI_PRODUCTS.length} products`);
   await seedDemoCatalog();
   console.log(`catalogue: ${DEMO_CATEGORIES.length} categories, ${DEMO_PRODUCTS.length} demo products`);
 }

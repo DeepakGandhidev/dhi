@@ -29,6 +29,14 @@ export function applyBps(amount: number, bps: number): number {
   return Math.floor((amount * bps) / BPS);
 }
 
+/**
+ * PV comes in steps of 0.5 (a product can carry 1.5 PV). Halves are exact in
+ * binary floating point, so sums of PV stay exact; money is only ever paid
+ * on whole 25 PV pairs, so FCFA amounts stay whole.
+ */
+export const isPv = (n: unknown): n is number =>
+  typeof n === "number" && Number.isFinite(n) && Number.isInteger(n * 2) && Math.abs(n) < 1e12;
+
 export function pvToFcfaExact(pv: number, pvValue: number): number {
   if (!Number.isSafeInteger(pv)) throw new Error(`PV must be whole, got ${pv}`);
   return assertFcfa(pv * pvValue);

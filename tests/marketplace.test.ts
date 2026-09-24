@@ -168,3 +168,36 @@ describe("reviews", () => {
     await expect(submitReview(who, "x", 9, "")).rejects.toThrow(/note/);
   });
 });
+
+describe("DHI catalogue", () => {
+  it("loads the 28 products once, keeps admin edits, and hides demo rows", async () => {
+    const { seedDemoCatalog } = await import("@/lib/demoCatalog");
+    const { listProducts, listCategories } = await import("@/lib/services/catalog");
+    await seedDemoCatalog(); // a store that already had the demo set
+    const first = await listProducts({ perPage: 48 });
+    expect(first.total).toBe(28);
+    expect(first.items[0].name).toBe("Coenzyme Q10 (CoQ10)");
+    expect(first.items.every((p) => !p.demo)).toBe(true);
+    const gel = await Product.findOne({ slug: "gel-celan" }).lean();
+    expect(gel).toMatchObject({ price: 1500, pv: 1.5, images: ["/products/gel-celan.svg"] });
+    expect((await listCategories()).map((c) => c.slug)).toEqual(["complements-alimentaires", "thes-et-cafe", "soins"]);
+
+    await Product.updateOne({ slug: "cafe" }, { $set: { price: 14_000 } });
+    const { seedDhiCatalog } = await import("@/lib/dhiCatalog");
+    await seedDhiCatalog();
+    expect((await Product.findOne({ slug: "cafe" }).lean())!.price).toBe(14_000);
+    expect(await Product.countDocuments({ demo: { $ne: true } })).toBe(28);
+  });
+
+  it("credits and propagates half PV from a product purchase", async () => {
+    const aff = await joinActive(undefined, "left", "ring");
+    const buyer = await joinActive(aff, "left", "little");
+    const p = await makeProduct({ price: 1_500, pv: 1.5 as number });
+    await setCartItem(`m:${buyer}`, String(p._id), 3);
+    const order = await checkout(`m:${buyer}`, buyer);
+    await setOrderStatus(String(order._id), "confirmed", "office");
+    const pv = await PvEntry.find({ member: buyer, type: "product_purchase" }).lean();
+    expect(pv[0].pv).toBe(4.5);
+    expect((await BinaryVolume.findOne({ member: aff }).lean())!.carryLeft).toBe(29.5);
+  });
+});

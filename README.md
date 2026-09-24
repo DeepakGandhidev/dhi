@@ -25,7 +25,7 @@ standalone `mongod` is not and will fail at the first activation.
 ```bash
 npm test                     # 56 tests: calculations, engine, marketplace (in-memory replica set)
 npm run db:migrate           # once, on an existing database: lineage + package orders + indexes
-npm run db:seed              # demo categories and products (flagged demo: true)
+npm run db:seed              # DHI range + demo products (demo rows are hidden in the store)
 npm run db:seed -- --network # plus a 31-member demo network with activity (dev only)
 npm run db:seed -- --remove  # delete the demo products and categories
 ```
@@ -171,6 +171,18 @@ password.
 | `/admin` | Queues, member activation, order lifecycle, payouts, products, reviews, award delivery, ledger inspection with corrections, versioned business rules |
 
 Portal wording lives in [`src/i18n/fr.ts`](src/i18n/fr.ts).
+
+### Product range
+
+DHI's 28 products (official price list) are defined in
+[`src/lib/dhiCatalog.ts`](src/lib/dhiCatalog.ts) and inserted automatically on
+the first marketplace request after a deploy — missing products only, so
+prices, stock or photos changed in `/admin` are never overwritten. Stock
+starts at 100. PV can be in steps of 0.5 (Gel Celan is 1,5 PV).
+
+Each product has a drawn pack image in `public/products/<slug>.svg`
+(`npx tsx scripts/product-images.ts` redraws them). Replace them with real
+photos by overwriting the file or setting a photo URL in `/admin`.
 
 ### How the money flows
 

@@ -8,7 +8,7 @@ import {
   type PvEntryDoc,
   type PvType,
 } from "../models";
-import { applyBps, pvToFcfaExact } from "../money";
+import { applyBps, isPv, pvToFcfaExact } from "../money";
 import { formatFcfa, type PackageId } from "../plan";
 import { notify } from "./notifications";
 import { getRules, type Rules } from "./rules";
@@ -51,7 +51,7 @@ export type CreditPv = {
  * limit and runs their matching. Idempotent on `key`.
  */
 export async function creditPv(input: CreditPv, session: ClientSession) {
-  if (!Number.isSafeInteger(input.pv) || input.pv === 0) return null;
+  if (!isPv(input.pv) || input.pv === 0) return null;
   if (await PvEntry.exists({ key: input.key }).session(session)) return null;
 
   const [entry] = await PvEntry.create([input], { session });

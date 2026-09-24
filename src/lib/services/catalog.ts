@@ -17,7 +17,8 @@ export async function listProducts(query: ProductQuery) {
   await ensureCatalog();
   const page = Math.max(1, query.page ?? 1);
   const perPage = Math.min(48, Math.max(1, query.perPage ?? 12));
-  const filter: Record<string, unknown> = { status: "active" };
+  // Demonstration rows are for local testing; the store shows real products.
+  const filter: Record<string, unknown> = { status: "active", demo: { $ne: true } };
   if (query.category) filter.category = query.category;
   const q = query.q?.trim().slice(0, 80);
   if (q) {
@@ -36,11 +37,13 @@ export async function listProducts(query: ProductQuery) {
 
 export async function listCategories() {
   await ensureCatalog();
-  return Category.find().sort({ order: 1, name: 1 }).lean();
+  return Category.find({ demo: { $ne: true } }).sort({ order: 1, name: 1 }).lean();
 }
 
-export const getProduct = (slug: string) =>
-  Product.findOne({ slug, status: "active" }).lean<ProductDoc>();
+export async function getProduct(slug: string) {
+  await ensureCatalog();
+  return Product.findOne({ slug, status: "active" }).lean<ProductDoc>();
+}
 
 /* ---- Reviews ------------------------------------------------------------ */
 

@@ -14,6 +14,7 @@ import {
   type MemberDoc,
 } from "../models";
 import { formatFcfa } from "../plan";
+import { isPv } from "../money";
 import { creditPv } from "./binary";
 import { notify } from "./notifications";
 import { settleUpline } from "./settle";
@@ -173,7 +174,7 @@ export async function saveProduct(input: Record<string, unknown>, id?: string) {
   const stock = Number(input.stock);
   if (!Number.isSafeInteger(stock) || stock < 0) errors.stock = "Stock entier ≥ 0.";
   const pv = Number(input.pv ?? 0);
-  if (!Number.isSafeInteger(pv) || pv < 0) errors.pv = "PV entier ≥ 0.";
+  if (!isPv(pv) || pv < 0) errors.pv = "PV ≥ 0, par pas de 0,5.";
   const aff = input.affiliateBps === "" || input.affiliateBps == null ? null : Number(input.affiliateBps);
   if (aff !== null && (!Number.isInteger(aff) || aff < 0 || aff > 10_000)) errors.affiliateBps = "Entre 0 et 10 000 points de base.";
   const images = lines(input.images).filter((u) => /^https:\/\//.test(u));

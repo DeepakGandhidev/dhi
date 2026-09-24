@@ -4,7 +4,8 @@
  */
 export { formatFcfa } from "./plan";
 
-const nf = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
+// One decimal so half-PV (1,5 PV) shows; whole numbers still print without one.
+const nf = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
 const space = (s: string) => s.replace(/[  ]/g, " ");
 
 export const formatNumber = (n: number) => space(nf.format(n));

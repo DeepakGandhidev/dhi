@@ -1,4 +1,5 @@
 import mongoose, { Schema, models, model } from "mongoose";
+import { isPv } from "../money";
 
 /* ---- Catalogue ---------------------------------------------------------- */
 
@@ -59,7 +60,7 @@ const ProductSchema = new Schema<ProductDoc>(
     images: { type: [String], default: [] },
     price: { type: Number, required: true, min: 0, validate: Number.isInteger },
     stock: { type: Number, required: true, min: 0, validate: Number.isInteger },
-    pv: { type: Number, default: 0, min: 0, validate: Number.isInteger },
+    pv: { type: Number, default: 0, min: 0, validate: isPv },
     affiliateBps: { type: Number, default: null, min: 0, max: 10_000 },
     characteristics: { type: [String], default: [] },
     delivery: { type: String, default: "" },

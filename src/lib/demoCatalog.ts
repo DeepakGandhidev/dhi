@@ -1,4 +1,5 @@
 import { Category, Product } from "./models";
+import { seedDhiCatalog } from "./dhiCatalog";
 
 /**
  * Demonstration catalogue. Every row is flagged `demo: true`, so it can be
@@ -223,25 +224,22 @@ export async function seedDemoCatalog() {
 let pending: Promise<void> | null = null;
 
 /**
- * A store with no real products shows the demo catalogue so the marketplace
- * can be tried straight away. As soon as DHI adds one real product nothing
- * is inserted again. Set DEMO_CATALOG=off to
- * disable it. One check per server instance, shared by parallel callers.
+ * Makes sure DHI's own range is in the store (missing products only). One
+ * check per server instance, shared by parallel callers. The demo catalogue
+ * above is no longer loaded automatically: `npm run db:seed` adds it for
+ * local testing, and the store hides demo rows (see catalog.ts).
  */
 export function ensureCatalog(): Promise<void> {
-  if (process.env.DEMO_CATALOG === "off") return Promise.resolve();
   pending ??= (async () => {
-    // Only while the store has no real products; tops up a partial demo set.
-    if (await Product.exists({ demo: { $ne: true } })) return;
     try {
-      await seedDemoCatalog();
+      await seedDhiCatalog();
     } catch (err) {
-      // Another instance seeding at the same moment hits the unique slug; fine.
+      // Another instance inserting at the same moment hits the unique slug; fine.
       if ((err as { code?: number }).code !== 11000) throw err;
     }
   })().catch((err) => {
     pending = null; // retry on the next request
-    console.error("[catalog] could not load the demo catalogue", err);
+    console.error("[catalog] could not load the DHI catalogue", err);
   });
   return pending;
 }
