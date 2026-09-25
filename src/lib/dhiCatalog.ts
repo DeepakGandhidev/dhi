@@ -1,4 +1,5 @@
 import { Category, Product } from "./models";
+import { PRODUCT_INFO } from "./productInfo";
 
 /**
  * DHI's own product range, from the official "Nos produits" price list.
@@ -82,6 +83,12 @@ export const DHI_PRODUCTS: DhiProduct[] = [
 export const productImagePath = (slug: string) => `/products/${slug}.svg`;
 
 const STOCK = 100;
+const PLACEHOLDER = "Produit Divine Health International.";
+
+const characteristics = (p: DhiProduct) => [
+  ...(PRODUCT_INFO[p.slug]?.benefits ?? []),
+  `${String(p.pv).replace(".", ",")} PV par unité`,
+];
 
 /** Adds any DHI category or product that is not in the database yet. */
 export async function seedDhiCatalog() {
@@ -96,14 +103,14 @@ export async function seedDhiCatalog() {
           slug: p.slug,
           name: p.name,
           category: p.category,
-          summary: "Produit Divine Health International.",
+          summary: PRODUCT_INFO[p.slug]?.role ?? PLACEHOLDER,
           description: "",
           images: [productImagePath(p.slug)],
           price: p.price,
           stock: STOCK,
           pv: p.pv,
           affiliateBps: null,
-          characteristics: [`Référence DHI n° ${p.n}`, `${String(p.pv).replace(".", ",")} PV par unité`],
+          characteristics: characteristics(p),
           delivery: "Livraison à Lomé sous 48 h, autres villes sous 5 jours ouvrés.",
           warranty: "",
           returns: "Retour accepté sous 7 jours si le produit n'a pas été ouvert.",
@@ -115,6 +122,15 @@ export async function seedDhiCatalog() {
         },
       },
       { upsert: true, timestamps: false }
+    );
+  }
+  // Products loaded before descriptions existed: fill in the untouched placeholder only.
+  for (const p of DHI_PRODUCTS) {
+    const info = PRODUCT_INFO[p.slug];
+    if (!info) continue;
+    await Product.updateOne(
+      { slug: p.slug, summary: PLACEHOLDER },
+      { $set: { summary: info.role, characteristics: characteristics(p) } }
     );
   }
 }

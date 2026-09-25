@@ -135,10 +135,35 @@ export const TEAM: TeamMember[] = [
     ],
   },
   {
-    // Profile text not supplied yet.
-    id: "member-5",
-    name: null,
-    roles: [],
-    photo: "/team/member-5.jpg",
+    id: "dossou",
+    name: "M. DOSSOU Marcharles",
+    roles: ["PDG de SIC au Togo | IT Consultant de DHI"],
+    photo: "/team/dossou.jpg",
+    points: [
+      {
+        label: "Expertise",
+        text: "Expert en informatique et technologies numériques, spécialisé dans la conception et la mise en œuvre de solutions digitales pour les entreprises.",
+      },
+      {
+        label: "Domaines d’intervention",
+        tags: [
+          "Développement web",
+          "Digitalisation",
+          "Plateformes numériques",
+          "Innovation technologique",
+          "Transformation digitale",
+        ],
+      },
+      {
+        label: "Vision",
+        text: "Mettre la technologie au service de l’entrepreneuriat et du développement économique en Afrique.",
+      },
+      {
+        label: "Engagement",
+        text: "Promouvoir l’innovation numérique, moderniser les services et accompagner la transformation digitale des organisations.",
+      },
+    ],
+    quote:
+      "La technologie doit être un levier d’innovation, de performance et de développement durable pour les entreprises africaines.",
   },
 ];
